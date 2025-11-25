@@ -1,0 +1,28 @@
+# 1. 定义物理存储 (PersistentVolume)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ollama-nfs-pv
+spec:
+  capacity:
+    storage: 10Gi       # 声明大小，只要比模型大就行
+  accessModes:
+    - ReadWriteMany     # 这是重点，支持多节点同时读写
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    path: /data/ollama-nfs    # node1 上的共享目录
+    server: 192.168.30.11     # k8s-node1 的 IP (请确认你的 master_ip)
+
+---
+# 2. 定义存储申请 (PersistentVolumeClaim)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-nfs-pvc
+  namespace: ai-services
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
