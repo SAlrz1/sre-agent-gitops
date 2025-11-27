@@ -1,0 +1,36 @@
+# prometheus-storage.yaml
+
+# 1. 定义物理存储 (PersistentVolume)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-nfs-pv
+  labels:
+    type: nfs
+    usage: prometheus  # 打个标签，方便绑定
+spec:
+  capacity:
+    storage: 20Gi      # 监控数据通常比较多，给 20G (根据你虚拟机硬盘情况调整)
+  accessModes:
+    - ReadWriteOnce    # Prometheus 通常只需要一个实例读写
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    path: /data/prometheus_nfs   # 刚才创建的目录
+    server: 192.168.30.11        # k8s-node1 的 IP
+
+---
+# 2. 定义存储申请 (PersistentVolumeClaim)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-nfs-pvc
+  namespace: monitoring  # ⚠️ 注意：Prometheus 部署在 monitoring 命名空间
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  selector:
+    matchLabels:
+      usage: prometheus  # 强制绑定到上面那个 PV，防止乱绑定
